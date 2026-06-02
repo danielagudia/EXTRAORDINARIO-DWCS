@@ -46,19 +46,11 @@ function conseguirNombres($id)
     
     
     $response->assign('prod{$id}', 'innerHTML', $mensaje);
-
     $response->script("document.getElementById('prod{$id}').style.display ='block'");
 
     return $response;
 }
 
-function popup(){
-    $response = jaxon()->newResponse();
-
-    $mensaje = "hola";
-    
-    return $response->alert($mensaje);
-}
 
 $jaxon->register(Jaxon::CALLABLE_FUNCTION, "conseguirNombres");
 $jaxon->register(Jaxon::CALLABLE_FUNCTION, "popup");
@@ -143,8 +135,6 @@ if (isset($_POST['comprar'])) {
                         , Precio: {$filas->pvp} (€)
                         <textarea style='display:none; width:100px; height:50px; background-color:white;' id='prod{$filas->id}'> </textarea>
                     FIN;
-
-                    echo"<button type='button' onclick='jaxon_popup()'> popup </button>";
                         echo"</td>";
 
                     echo "<td class='text-center'>";
