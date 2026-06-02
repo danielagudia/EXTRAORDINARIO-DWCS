@@ -1,0 +1,279 @@
+/*
+    @package jaxon
+    @version $Id: jaxon.core.js 327 2007-02-28 16:55:26Z
+    @copyright Copyright (c) 2005-2007 by Jared White & J. Max Wilson
+    @copyright Copyright (c) 2008-2010 by Joseph Woolley, Steffen Konerow, Jared White  & J. Max Wilson
+    @copyright Copyright (c) 2017 by Thierry Feuzeu, Joseph Woolley, Steffen Konerow, Jared White  & J. Max Wilson
+    @license https://opensource.org/license/bsd-3-clause/ BSD License
+*/
+
+/**
+ * Class: jaxon
+ */
+var jaxon = {
+    /**
+     * Version number
+     */
+    version: {
+        number: '5.2.4',
+    },
+
+    debug: {
+        /**
+         * Class: jaxon.debug.verbose
+         *
+         * Provide a high level of detail which can be used to debug hard to find problems.
+         */
+        verbose: {},
+    },
+
+    ajax: {
+        callback: {},
+        command: {},
+        parameters: {},
+        request: {},
+        response: {},
+        upload: {},
+    },
+
+    cmd: {
+        node: {},
+        script: {},
+        event: {},
+        dialog: {},
+    },
+
+    parser: {
+        attr: {},
+        call: {},
+        query: {},
+    },
+
+    utils: {
+        dom: {},
+        form: {},
+        queue: {},
+        types: {},
+        string: {},
+        log: {},
+    },
+
+    bag: {},
+
+    dom: {},
+
+    dialog: {},
+
+    config: {},
+};
+
+/**
+ * This object contains all the default configuration settings.
+ * These are application level settings; however, they can be overridden by
+ * specifying the appropriate configuration options on a per call basis.
+ */
+(function(self, log) {
+    /**
+     * An array of header entries where the array key is the header option name and
+     * the associated value is the value that will set when the request object is initialized.
+     *
+     * These headers will be set for both POST and GET requests.
+     */
+    self.commonHeaders = {
+        'If-Modified-Since': 'Sat, 1 Jan 2000 00:00:00 GMT'
+    };
+
+    /**
+     * An array of header entries where the array key is the header option name and the
+     * associated value is the value that will set when the request object is initialized.
+     */
+    self.postHeaders = {};
+
+    /**
+     * An array of header entries where the array key is the header option name and the
+     * associated value is the value that will set when the request object is initialized.
+     */
+    self.getHeaders = {};
+
+    /**
+     * true if jaxon should display a wait cursor when making a request, false otherwise.
+     */
+    self.waitCursor = false;
+
+    /**
+     * true if jaxon should log the status to the console during a request, false otherwise.
+     */
+    self.statusMessages = false;
+
+    /**
+     * The base document that will be used throughout the code for locating elements by ID.
+     */
+    self.baseDocument = document;
+
+    /**
+     * The URI that requests will be sent to.
+     *
+     * @var {string}
+     */
+    self.requestURI = document.URL;
+
+    /**
+     * The request mode.
+     * - 'asynchronous' - The request will immediately return.
+     *   The response will be processed when (and if) it is received.
+     * - 'synchronous' - The request will block, waiting for the response.
+     *   This option allows the server to return a value directly to the caller.
+     */
+    self.defaultMode = 'asynchronous';
+
+    /**
+     * The Hyper Text Transport Protocol version designated in the header of the request.
+     */
+    self.defaultHttpVersion = 'HTTP/1.1';
+
+    /**
+     * The content type designated in the header of the request.
+     */
+    self.defaultContentType = 'application/x-www-form-urlencoded';
+
+    /**
+     * The delay time, in milliseconds, associated with the <jaxon.callback.onRequestDelay> event.
+     */
+    self.defaultResponseDelayTime = 1000;
+
+    /**
+     * Always convert the reponse content to json.
+     */
+    self.convertResponseToJson = true;
+
+    /**
+     * The amount of time to wait, in milliseconds, before a request is considered expired.
+     * This is used to trigger the <jaxon.callback.onExpiration> event.
+     */
+    self.defaultExpirationTime = 10000;
+
+    /**
+     * The method used to send requests to the server.
+     * - 'POST': Generate a form POST request
+     * - 'GET': Generate a GET request; parameters are appended to <jaxon.config.requestURI> to form a URL.
+     */
+    self.defaultMethod = 'POST'; // W3C = Method is case sensitive
+
+    /**
+     * The number of times a request should be retried if it expires.
+     */
+    self.defaultRetry = 5;
+
+    /**
+     * The maximum depth of recursion allowed when serializing objects to be sent to the server in a request.
+     */
+    self.maxObjectDepth = 20;
+
+    /**
+     * The maximum number of members allowed when serializing objects to be sent to the server in a request.
+     */
+    self.maxObjectSize = 2000;
+
+    /**
+     * The maximum number of commands allowed in a single response.
+     */
+    self.commandQueueSize = 1000;
+
+    /**
+     * The maximum number of requests that can be processed simultaneously.
+     */
+    self.requestQueueSize = 1000;
+
+    /**
+     * Common options for all HTTP requests to the server.
+     */
+    self.httpRequestOptions = {
+        mode: "no-cors", // *no-cors, cors, same-origin
+        cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
+        credentials: "same-origin", // include, *same-origin, omit
+        redirect: "manual", // manual, *follow, error
+    };
+
+    /**
+     * Class: jaxon.config.status
+     *
+     * Provides support for updating the browser's status bar during the request process.
+     * By splitting the status bar functionality into an object, the jaxon developer has the opportunity
+     * to customize the status bar messages prior to sending jaxon requests.
+     */
+    self.status = {
+        /**
+         * A set of event handlers that will be called by the
+         * jaxon framework to set the status bar messages.
+         *
+         * @type {object}
+         */
+        update: {
+            onPrepare: () => log.consoleMode().debug('Sending Request...'),
+            onRequest: () => log.consoleMode().debug('Waiting for Response...'),
+            onProcessing: () => log.consoleMode().debug('Processing...'),
+            onComplete: () => log.consoleMode().debug('Done.'),
+        },
+
+        /**
+         * A set of event handlers that will be called by the
+         * jaxon framework where status bar updates would normally occur.
+         *
+         * @type {object}
+         */
+        dontUpdate: {
+            onPrepare: () => {},
+            onRequest: () => {},
+            onProcessing: () => {},
+            onComplete: () => {}
+        },
+    };
+
+    /**
+     * Class: jaxon.config.cursor
+     *
+     * Provides the base functionality for updating the browser's cursor during requests.
+     * By splitting this functionality into an object of it's own, jaxon developers can now
+     * customize the functionality prior to submitting requests.
+     */
+    self.cursor = {
+        /**
+         * Constructs and returns a set of event handlers that will be called by the
+         * jaxon framework to effect the status of the cursor during requests.
+         *
+         * @type {object}
+         */
+        update: {
+            onRequest: () => {
+                if (jaxon.config.baseDocument.body) {
+                    jaxon.config.baseDocument.body.style.cursor = 'wait';
+                }
+            },
+            onComplete: () => {
+                if (jaxon.config.baseDocument.body) {
+                    jaxon.config.baseDocument.body.style.cursor = 'auto';
+                }
+            },
+            onFailure: function() {
+                if (jaxon.config.baseDocument.body) {
+                    jaxon.config.baseDocument.body.style.cursor = 'auto';
+                }
+            },
+        },
+
+        /**
+         * Constructs and returns a set of event handlers that will be called by the jaxon framework
+         * where cursor status changes would typically be made during the handling of requests.
+         *
+         * @type {object}
+         */
+        dontUpdate: {
+            onRequest: () => {},
+            onComplete: () => {},
+            onFailure: () => {},
+        },
+    };
+})(jaxon.config, jaxon.utils.log);
+
+// Make jaxon accessible with the dom.findFunction function.
+window.jaxon = jaxon;

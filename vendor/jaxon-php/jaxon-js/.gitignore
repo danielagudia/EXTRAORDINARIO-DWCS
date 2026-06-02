@@ -1,0 +1,9 @@
+# Do not commit Eclipse files
+.project
+.settings/*
+.idea/
+/coverage/
+/node_modules/
+/package-lock.json
+/yarn.lock
+/yarn-error.log
