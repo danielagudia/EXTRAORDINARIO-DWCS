@@ -76,6 +76,6 @@ constraint fk_ventas_empleado foreign key(id_empleado) references empleados(id) 
 );
 
 drop user if exists 'gestor'@'localhost';
-create IF NOT EXISTS user 'gestor'@'localhost' identified by "secreto";
+create user 'gestor'@'localhost' identified by "secreto";
 grant all on examen2.* to 'gestor'@'localhost';
 
